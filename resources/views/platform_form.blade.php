@@ -12,7 +12,7 @@
                 <input type="text" id="page" name="page" class="form-control">
             </div>
 
-            <button type="submit" class="btn btn-success">Fetch Data</button>
+            <button type="submit" class="btn btn-dark">Fetch Data</button>
         </form>
     </div>
 </x-app-layout>

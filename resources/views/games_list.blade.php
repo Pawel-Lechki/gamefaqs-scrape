@@ -1,5 +1,5 @@
 <x-app-layout>
-    <table class="table">
+    <table class="table p-2">
         <thead>
         <tr>
             <th>Name</th>
@@ -29,8 +29,8 @@
         @endforeach
         </tbody>
     </table>
-    <div class="d-flex w-100 justify-content-between align-items-center">
-        <a href="{{ route('/') }}">Back</a>
-        <a href="{{ route('exportXlsx') }}">Export to XLSX</a>
+    <div class="d-flex w-100 justify-content-between align-items-center p-5">
+        <a href="{{ route('showForm') }}" class="btn btn-dark">Back</a>
+        <a href="{{ route('exportXlsx') }}" class="btn btn-success">Export to XLSX</a>
     </div>
 </x-app-layout>
