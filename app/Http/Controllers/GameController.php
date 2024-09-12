@@ -71,7 +71,7 @@ class GameController extends Controller
 //        $genre = $this->getXPathTextArray($xpath, '//td[contains(text(), "Genre")]/following-sibling::td//a');
 //        $releaseDate = $this->formatDate($this->getXPathText($xpath, '//td[contains(text(), "Release Date")]/following-sibling::td'));
         $genre = $this->getXPathTextArray($xpath, '//ol[@class="list flex col1 nobg"]//li[2]//b[contains(text(), "Genre")]/following-sibling::a');
-        // Obsługa różnych przypadków Developer i Publisher
+
         $developer = '';
         $publisher = '';
 
@@ -149,7 +149,7 @@ class GameController extends Controller
     {
         $games = Session::get('games', []);
         $platform = Session::get('platform');
-        $page = Session::get('page'); // Domyślnie na stronie 0
+        $page = Session::get('page');
 
         if (empty($games)) {
             return back()->with('error', 'No data available to export.');
@@ -183,7 +183,7 @@ class GameController extends Controller
 
         $writer = new Xlsx($spreadsheet);
         $date = date('Y-m-d h-i-s');
-        $fileName = "{$platform}.{$page}-{$date}.xlsx"; // Ustal nazwę pliku
+        $fileName = "{$platform}.{$page}-{$date}.xlsx";
         $tempFile = tempnam(sys_get_temp_dir(), $fileName);
         $writer->save($tempFile);
 

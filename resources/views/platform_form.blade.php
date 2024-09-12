@@ -1,19 +1,18 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Platform Data</title>
-</head>
-<body>
-<h1>Enter Platform Name</h1>
-<form action="{{ route('fetchData') }}" method="POST">
-    @csrf
-    <label for="platform">Platform:</label>
-    <input type="text" id="platform" name="platform" required>
-    <label for="platform">Page:</label>
-    <input type="text" id="page" name="page">
-    <button type="submit">Fetch Data</button>
-</form>
-</body>
-</html>
+<x-app-layout>
+    <div class="d-flex p-2 flex-column justify-content-center align-items-center w-100" style="margin-top: 50px">
+        <h1>Enter Platform Name</h1>
+        <form action="{{ route('fetchData') }}" method="POST" class="d-flex flex-column">
+            @csrf
+            <div class="mb-3">
+                <label for="platform" class="form-label">Platform:</label>
+                <input type="text" id="platform" name="platform" required class="form-control">
+            </div>
+            <div class="mb-3">
+                <label for="platform" class="form-label">Page:</label>
+                <input type="text" id="page" name="page" class="form-control">
+            </div>
+
+            <button type="submit" class="btn btn-success">Fetch Data</button>
+        </form>
+    </div>
+</x-app-layout>
