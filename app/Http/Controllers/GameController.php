@@ -31,6 +31,9 @@ class GameController extends Controller
         $games = [];
         $totalPages = 1;
 
+        $page -= 1;
+        if ($page < 0) $page = 0;
+
         $response = Http::get($url . "?page=" . $page);
 
         if (!$response->successful()) {
@@ -70,7 +73,9 @@ class GameController extends Controller
 
 //        $genre = $this->getXPathTextArray($xpath, '//td[contains(text(), "Genre")]/following-sibling::td//a');
 //        $releaseDate = $this->formatDate($this->getXPathText($xpath, '//td[contains(text(), "Release Date")]/following-sibling::td'));
-        $genre = $this->getXPathTextArray($xpath, '//ol[@class="list flex col1 nobg"]//li[2]//b[contains(text(), "Genre")]/following-sibling::a');
+//        $genre = $this->getXPathTextArray($xpath, '//ol[@class="list flex col1 nobg"]//li[2]//b[contains(text(), "Genre")]/following-sibling::a');
+
+        $genreLinks = $this->getXPathTextAndLinks($xpath, '//ol[@class="list flex col1 nobg"]//li[2]//b[contains(text(), "Genre")]/following-sibling::a');
 
         $developer = '';
         $publisher = '';
@@ -79,27 +84,54 @@ class GameController extends Controller
         $devPubCombined = $xpath->query('//div[@class="content"]/b[contains(text(), "Developer/Publisher")]/following-sibling::a');
         if ($devPubCombined->length > 0) {
             $developer = trim($devPubCombined->item(0)->textContent);
+            $developerLink = $this->getXPathLink($xpath, '//div[@class="content"]/b[contains(text(), "Developer")]/following-sibling::a');
             $publisher = $developer; // W tym przypadku zakładamy, że deweloper jest też wydawcą
+            $publisherLink = $developerLink;
         } else {
             // Developer i Publisher osobno
             $developer = $this->getXPathText($xpath, '//div[@class="content"]/b[contains(text(), "Developer")]/following-sibling::a');
+            $developerLink = $this->getXPathLink($xpath, '//div[@class="content"]/b[contains(text(), "Developer")]/following-sibling::a');
             $publisher = $this->getXPathText($xpath, '//div[@class="content"]/b[contains(text(), "Publisher")]/following-sibling::a');
+            $publisherLink = $this->getXPathLink($xpath, '//div[@class="content"]/b[contains(text(), "Publisher")]/following-sibling::a');
+
         }
 
-        $dateText = $this->getXPathText($xpath, '//div[@class="content"]/b[contains(text(), "Release:")]/following-sibling::a[1]');
+        $dateText = $this->getXPathText($xpath, '//div[@class="content"]/b[contains(text(), "Release:")]/following-sibling::a');
         $releaseDate = $this->formatDate($dateText);
+        $releaseDateLink = $this->getXPathLink($xpath, '//div[@class="content"]/b[contains(text(), "Release:")]/following-sibling::a[1]');
 
         return [
             'name' => $gameName,
             'url' => $url,
-            'genre1' => $genre[0] ?? 'N/A',
-            'genre2' => $genre[1] ?? 'N/A',
-            'genre3' => $genre[2] ?? 'N/A',
-            'genre4' => $genre[3] ?? 'N/A',
+            'genres' => $genreLinks, // Zawiera teksty i linki dla gatunków
             'release_date' => $releaseDate,
+            'release_date_link' => $releaseDateLink, // Link do daty premiery, jeśli istnieje
             'developer' => $developer ?: 'N/A',
+            'developer_link' => $developerLink, // Link do developera
             'publisher' => $publisher ?: 'N/A',
+            'publisher_link' => $publisherLink, // Link do wydawcy
         ];
+    }
+
+    private function getXPathTextAndLinks(\DOMXPath $xpath, string $query): array
+    {
+        $nodes = $xpath->query($query);
+        $data = [];
+
+        foreach ($nodes as $node) {
+            $data[] = [
+                'text' => trim($node->textContent),
+                'link' => $node->getAttribute('href') ? 'https://gamefaqs.gamespot.com' . $node->getAttribute('href') : null,
+            ];
+        }
+
+        return $data;
+    }
+
+    private function getXPathLink(\DOMXPath $xpath, string $query): ?string
+    {
+        $node = $xpath->query($query)->item(0);
+        return $node ? 'https://gamefaqs.gamespot.com' . $node->getAttribute('href') : null;
     }
 
     private function getXPathText(\DOMXPath $xpath, string $query): string
@@ -142,7 +174,7 @@ class GameController extends Controller
 
         // Debugowanie w przypadku nieudanego dopasowania
 //        echo "Nieznany format daty: $date\n";
-        return 'N/A';
+        return $date;
     }
 
     public function exportToXlsx(Request $request)
@@ -169,15 +201,41 @@ class GameController extends Controller
 
         $row = 2;
         foreach ($games as $game) {
+            // Nazwa gry
             $sheet->setCellValue('A' . $row, $game['name']);
+            $sheet->getCell('A' . $row)->getHyperlink()->setUrl($game['url']);
+
+            // Link do gry
             $sheet->setCellValue('B' . $row, $game['url']);
-            $sheet->setCellValue('C' . $row, $game['genre1']);
-            $sheet->setCellValue('D' . $row, $game['genre2']);
-            $sheet->setCellValue('E' . $row, $game['genre3']);
-            $sheet->setCellValue('F' . $row, $game['genre4']);
-            $sheet->setCellValue('G' . $row, $game['release_date']);
+
+            // Gatunki z linkami
+            for ($i = 0; $i < 4; $i++) {
+                $genreField = $game['genres'][$i] ?? ['text' => 'N/A', 'link' => null];
+                $cell = chr(67 + $i) . $row; // Kolumny od C do F
+                $sheet->setCellValue($cell, $genreField['text']);
+                if ($genreField['link']) {
+                    $sheet->getCell($cell)->getHyperlink()->setUrl($genreField['link']);
+                }
+            }
+
+            // Data wydania z linkiem
+//            $sheet->setCellValue('G' . $row, $game['release_date']);
+//            if ($game['release_date_link']) {
+//                $sheet->getCell('G' . $row)->getHyperlink()->setUrl($game['release_date_link']);
+//            }
+
+            // Developer z linkiem
             $sheet->setCellValue('H' . $row, $game['developer']);
+            if ($game['developer_link']) {
+                $sheet->getCell('H' . $row)->getHyperlink()->setUrl($game['developer_link']);
+            }
+
+            // Publisher z linkiem
             $sheet->setCellValue('I' . $row, $game['publisher']);
+            if ($game['publisher_link']) {
+                $sheet->getCell('I' . $row)->getHyperlink()->setUrl($game['publisher_link']);
+            }
+
             $row++;
         }
 
