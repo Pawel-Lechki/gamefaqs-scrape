@@ -150,30 +150,63 @@ class GameController extends Controller
         return $values;
     }
 
+//    private function formatDate(string $date): string
+//    {
+//        if (stripos($date, 'Canceled') !== false) {
+//            return 'Canceled';
+//        }
+//        /// Sprawdzenie dla formatu: Miesiąc dzień, rok (np. March 15, 2022)
+//        if (preg_match('/^([A-Za-z]+) (\d{1,2}), (\d{4})$/', $date, $matches)) {
+//            $formattedDate = DateTime::createFromFormat('F j, Y', $date);
+//            return $formattedDate ? $formattedDate->format('d.m.Y') : 'N/A';
+//        }
+//
+//        // Sprawdzenie dla formatu: Miesiąc, rok (np. February 2005)
+//        if (preg_match('/^([A-Za-z]+) (\d{4})$/', $date, $matches)) {
+//            $formattedDate = DateTime::createFromFormat('F Y', $date);
+//            return $formattedDate ? '01.' . $formattedDate->format('m.Y') : 'N/A';
+//        }
+//
+//        // Sprawdzenie dla formatu: rok (np. 2005)
+//        if (preg_match('/^(\d{4})$/', $date, $matches)) {
+//            return '01.01.' . $matches[1];
+//        }
+//
+//        // Debugowanie w przypadku nieudanego dopasowania
+////        echo "Nieznany format daty: $date\n";
+//        return $date;
+//    }
+
     private function formatDate(string $date): string
     {
         if (stripos($date, 'Canceled') !== false) {
             return 'Canceled';
         }
-        /// Sprawdzenie dla formatu: Miesiąc dzień, rok (np. March 15, 2022)
-        if (preg_match('/^([A-Za-z]+) (\d{1,2}), (\d{4})$/', $date, $matches)) {
-            $formattedDate = DateTime::createFromFormat('F j, Y', $date);
+
+        // Sprawdzamy, czy data zawiera przecinek (np. "March 5, 2022")
+        if (strpos($date, ',') !== false) {
+            // Rozbijamy datę na "Miesiąc dzień" i "rok"
+            $parts = explode(',', $date);
+            $monthDay = trim($parts[0]); // "March 5" lub "March 15"
+            $year = trim($parts[1]); // "2022"
+
+            // Obsługa daty, gdzie dzień może być jedno- lub dwucyfrowy
+            $formattedDate = DateTime::createFromFormat('F j Y', $monthDay . ' ' . $year);
             return $formattedDate ? $formattedDate->format('d.m.Y') : 'N/A';
         }
 
-        // Sprawdzenie dla formatu: Miesiąc, rok (np. February 2005)
+        // Obsługa formatu: "Miesiąc rok" (np. "February 2005")
         if (preg_match('/^([A-Za-z]+) (\d{4})$/', $date, $matches)) {
             $formattedDate = DateTime::createFromFormat('F Y', $date);
             return $formattedDate ? '01.' . $formattedDate->format('m.Y') : 'N/A';
         }
 
-        // Sprawdzenie dla formatu: rok (np. 2005)
+        // Obsługa formatu: Sam rok (np. "2005")
         if (preg_match('/^(\d{4})$/', $date, $matches)) {
             return '01.01.' . $matches[1];
         }
 
-        // Debugowanie w przypadku nieudanego dopasowania
-//        echo "Nieznany format daty: $date\n";
+        // Jeśli nie dopasowano, zwracamy oryginalną wartość
         return $date;
     }
 
@@ -223,6 +256,7 @@ class GameController extends Controller
 //            if ($game['release_date_link']) {
 //                $sheet->getCell('G' . $row)->getHyperlink()->setUrl($game['release_date_link']);
 //            }
+            $sheet->setCellValue('G' . $row, $game['release_date']);
 
             // Developer z linkiem
             $sheet->setCellValue('H' . $row, $game['developer']);
